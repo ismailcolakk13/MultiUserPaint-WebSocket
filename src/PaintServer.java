@@ -12,19 +12,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * MultiUserPaint - WebSocket Sunucusu
  *
  * Protokol (aynı kalıyor):
- *   ODALARI_GETIR          → ODALAR|oda1|oda2|...
- *   BAGLAN|kullanici|oda   → geçmişi gönderir
- *   CIZ|x1|y1|x2|y2|r|g|b|size  → odadaki herkese yayın
- *   KUTU|x|y|w|h           → odadaki herkese yayın (kes işlemi)
+ * ODALARI_GETIR → ODALAR|oda1|oda2|...
+ * BAGLAN|kullanici|oda → geçmişi gönderir
+ * CIZ|x1|y1|x2|y2|r|g|b|size → odadaki herkese yayın
+ * KUTU|x|y|w|h → odadaki herkese yayın (kes işlemi)
  */
 public class PaintServer extends WebSocketServer {
 
     // Oda adı → bağlı istemciler
-    private final Map<String, List<WebSocket>> roomClients  = new ConcurrentHashMap<>();
+    private final Map<String, List<WebSocket>> roomClients = new ConcurrentHashMap<>();
     // Oda adı → çizim geçmişi
-    private final Map<String, List<String>>    roomHistories = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> roomHistories = new ConcurrentHashMap<>();
     // Bağlantı → hangi odada olduğu
-    private final Map<WebSocket, String>       clientRooms  = new ConcurrentHashMap<>();
+    private final Map<WebSocket, String> clientRooms = new ConcurrentHashMap<>();
 
     public PaintServer(int port) {
         super(new InetSocketAddress(port));
@@ -50,7 +50,7 @@ public class PaintServer extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
         String[] parts = message.split("\\|");
-        String   type  = parts[0];
+        String type = parts[0];
 
         switch (type) {
 
@@ -63,10 +63,11 @@ public class PaintServer extends WebSocketServer {
             }
 
             case "BAGLAN": {
-                if (parts.length < 3) break;
+                if (parts.length < 3)
+                    break;
                 String roomName = parts[2];
 
-                roomClients .putIfAbsent(roomName, new CopyOnWriteArrayList<>());
+                roomClients.putIfAbsent(roomName, new CopyOnWriteArrayList<>());
                 roomHistories.putIfAbsent(roomName, new CopyOnWriteArrayList<>());
 
                 roomClients.get(roomName).add(conn);
@@ -83,7 +84,8 @@ public class PaintServer extends WebSocketServer {
             case "CIZ":
             case "KUTU": {
                 String room = clientRooms.get(conn);
-                if (room == null) break;
+                if (room == null)
+                    break;
 
                 roomHistories.get(room).add(message);
 
@@ -121,7 +123,8 @@ public class PaintServer extends WebSocketServer {
                 for (Map.Entry<String, List<String>> entry : roomHistories.entrySet()) {
                     String room = entry.getKey();
                     try (PrintWriter pw = new PrintWriter(new FileWriter("autosave_" + room + ".txt"))) {
-                        for (String cmd : entry.getValue()) pw.println(cmd);
+                        for (String cmd : entry.getValue())
+                            pw.println(cmd);
                         System.out.println("[💾] Otomatik kayıt: " + room);
                     } catch (IOException e) {
                         System.err.println("[!] Kayıt hatası: " + e.getMessage());
@@ -135,7 +138,8 @@ public class PaintServer extends WebSocketServer {
     private void loadAutosaves() {
         File[] files = new File(".").listFiles(
                 (d, n) -> n.startsWith("autosave_") && n.endsWith(".txt"));
-        if (files == null) return;
+        if (files == null)
+            return;
 
         for (File f : files) {
             String room = f.getName().substring(9, f.getName().length() - 4);
@@ -153,7 +157,7 @@ public class PaintServer extends WebSocketServer {
 
     // ── Main ──────────────────────────────────────────────────────────
     public static void main(String[] args) throws Exception {
-        PaintServer server = new PaintServer(8080);
+        PaintServer server = new PaintServer(8081);
         server.start();
     }
 }
